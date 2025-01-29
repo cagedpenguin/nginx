@@ -1,0 +1,49 @@
+# CACHE
+proxy_cache_path /tmp/cache levels=1:2 keys_zone=cache1:1024m;
+
+server
+{
+    # listen 443 ssl http2;
+    # ssl_protocols TLSv1.1 TLSv1.2 TLSv1.3;
+    # ssl_certificate      /etc/nginx/ssl/*.crt;
+    # ssl_certificate_key  /etc/nginx/ssl/*.key;
+    listen 443;
+    server_name test.domain;
+
+    # DOMAIN REDIRECT
+    # if ($http_host != test.domain) {
+    #     rewrite  ^(.*)$  https://test.domain$1;
+    # }
+
+    # ERROR PAGES
+    error_page   400 404              /404.html;
+    error_page   429                  /429-errors.html;
+    error_page   500 501 502 503 504 505  /500.html;
+
+    location ~* ^/(maintenance|500|404).html
+    {
+        access_log /var/log/nginx/access_errors.log main;
+        add_header  X-Robots-Tag "noindex, nofollow, nosnippet, noarchive";
+        root /opt/static_content/error_pages/;
+    }
+
+    location ~ ^/robots.txt {
+        root /opt/static_content/;
+    }
+
+    # MAIN
+    location /
+    {
+        #Rate Limiting
+        #limit_req zone=public burst=1 nodelay;
+        #limit_conn public 1;
+        #limit_req_status 429;
+
+        #proxy_intercept_errors on;
+        proxy_set_header Host $host;
+        proxy_pass https://rr_servers;
+    }
+
+    # EXAMPLE - LUA
+    # include luarqd.inc;
+}

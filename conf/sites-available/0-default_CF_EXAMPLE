@@ -1,0 +1,32 @@
+# CACHE
+proxy_cache_path /tmp/cache levels=1:2 keys_zone=cache1:1024m;
+
+server
+{
+    listen 443;
+    server_name test.domain;
+
+#    if ($http_host != test.domain) {
+#      rewrite  ^(.*)$  https://test.domain$1;
+#    }
+
+    #429
+    location ~* ^/429-errors.html
+    {
+      sub_filter '::CLIENT_IP::' $http_cf_connecting_ip;
+      sub_filter '::RAY_ID::' $http_cf_ray;
+      proxy_pass https://custompages_URL;
+    }
+
+    location /
+    {
+        #Rate Limiting
+        #limit_req zone=public burst=1 nodelay;
+        #limit_conn public 1;
+        #limit_req_status 429;
+
+        #proxy_intercept_errors on;
+        proxy_set_header Host $host;
+        proxy_pass https://rr_servers;
+    }
+}
